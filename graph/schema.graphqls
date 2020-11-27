@@ -1,0 +1,149 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Error {
+  error: Boolean!
+  code: Int
+  Message: String!
+}
+
+type User {
+  id: String
+  email: String
+  firstName: String
+  lastName: String
+  dateOfBirth: String
+  major: String
+  minor: String
+  willingToHelp: Boolean
+  posts: [Post]
+  comments: [Comment]
+  postIds: [String]
+  commentIds: [String]
+  classesTaken: [String]
+  passwordHash: String
+  emailVerified: EmailVerified
+  error: Error!
+}
+
+type Post {
+  id: String
+  userId: String
+  tags: [String]
+  content: String
+  files: [String]
+  comments: [Comment]
+  threadId: String
+  error: Error!
+}
+
+type Comment {
+  id: String
+  userId: String
+  postId: String
+  threadId: String
+  files: [String]
+  content: String
+  error: Error!
+}
+
+type EmailVerified {
+  verified: Boolean
+  dateValidated: String
+  email: String
+  error: Error!
+}
+
+type Login {
+  userId: String!
+  email: String!
+  token: String!
+  error: Error!
+}
+
+type VerifyEmail {
+  success: Boolean!
+  message: String!
+  error: Error!
+}
+
+input CreateUser {
+  email: String!
+  password: String!
+  dateOfBirth: String!
+  major: String!
+  minor: String
+  willingToHelp: Boolean!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input UserInput {
+  email: String!
+  token: String!
+}
+
+input PostInput {
+  email: String!
+  token: String!
+  postId: String!
+}
+
+input PostsInput {
+  email: String!
+  token: String!
+  postIds: [String!]!
+}
+
+input CommentInput {
+  email: String!
+  token: String!
+  commentId: String!
+}
+
+input CommentsInput {
+  email: String!
+  token: String!
+  commentIds: [String!]!
+}
+
+input CreatePost {
+  tags: [String]
+  content: String!
+  files: [String]
+  threadId: String!
+}
+
+input CreateComment {
+  tags: [String]
+  content: String!
+  files: [String]
+  threadId: String!
+  postId: String!
+}
+
+input VerifyEmailInput {
+  email: String!
+  emailToken: String!
+  secret: String!
+}
+
+type Mutation {
+  Login(input: LoginInput!): Login!
+  CreateUser(input: CreateUser!): User!
+  CreatePost(input: CreatePost!): Post!
+  CreateComment(input: CreateComment!): Comment!
+  VerifyEmail(input: VerifyEmailInput!): VerifyEmail!
+}
+
+type Query {
+  User(input: UserInput!): User!
+  Posts(input: PostsInput!): [Post!]!
+  Post(input: PostInput!): Post!
+  Comments(input: CommentsInput!): [Comment!]!
+  Comment(input: CommentInput!): Comment!
+}
