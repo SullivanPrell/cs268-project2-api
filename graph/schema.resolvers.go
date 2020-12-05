@@ -7,6 +7,8 @@ import (
 	"context"
 	"cs268-project2-api/graph/generated"
 	"cs268-project2-api/graph/model"
+	"cs268-project2-api/mongo"
+	"cs268-project2-api/user"
 	"fmt"
 )
 
@@ -15,7 +17,51 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUser) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	validatedUser, errors := user.ValidateInfo(input)
+	if errors.Errors == true {
+		fmt.Print(errors.Message)
+		return &model.User{
+			ID:            "",
+			Email:         "",
+			FirstName:     "",
+			LastName:      "",
+			DateOfBirth:   "",
+			Major:         "",
+			Minor:         "",
+			WillingToHelp: false,
+			Posts:         nil,
+			Comments:      nil,
+			PostIds:       nil,
+			CommentIds:    nil,
+			ClassesTaken:  nil,
+			EmailVerified: nil,
+			Token:         nil,
+			Error:         &errors,
+		}, nil
+	}
+	user, errors := mongo.CreateUser(validatedUser)
+	if errors.Errors == true {
+		fmt.Print(errors.Message)
+		return &model.User{
+			ID:            "",
+			Email:         "",
+			FirstName:     "",
+			LastName:      "",
+			DateOfBirth:   "",
+			Major:         "",
+			Minor:         "",
+			WillingToHelp: false,
+			Posts:         nil,
+			Comments:      nil,
+			PostIds:       nil,
+			CommentIds:    nil,
+			ClassesTaken:  nil,
+			EmailVerified: nil,
+			Token:         nil,
+			Error:         &errors,
+		}, nil
+	}
+	return &user, nil
 }
 
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePost) (*model.Post, error) {
@@ -31,7 +77,8 @@ func (r *mutationResolver) VerifyEmail(ctx context.Context, input model.VerifyEm
 }
 
 func (r *queryResolver) User(ctx context.Context, input model.UserInput) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	returnUser := mongo.FindOneUser(input.Email)
+	return &returnUser, nil
 }
 
 func (r *queryResolver) Posts(ctx context.Context, input model.PostsInput) ([]*model.Post, error) {

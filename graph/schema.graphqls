@@ -3,62 +3,67 @@
 # https://gqlgen.com/getting-started/
 
 type Error {
-  error: Boolean!
-  code: Int
-  Message: String!
+  errors: Boolean!
+  code: Int!
+  message: String!
 }
 
 type User {
-  id: String
-  email: String
-  firstName: String
-  lastName: String
-  dateOfBirth: String
-  major: String
-  minor: String
-  willingToHelp: Boolean
-  posts: [Post]
-  comments: [Comment]
-  postIds: [String]
-  commentIds: [String]
-  classesTaken: [String]
-  passwordHash: String
-  emailVerified: EmailVerified
+  _id: String!
+  email: String!
+  firstName: String!
+  lastName: String!
+  dateOfBirth: String!
+  major: String!
+  minor: String!
+  willingToHelp: Boolean!
+  posts: [Post!]!
+  comments: [Comment!]!
+  postIds: [String!]!
+  commentIds: [String!]!
+  classesTaken: [String!]!
+  emailVerified: EmailVerified!
+  token: UserToken!
   error: Error!
 }
 
+type UserToken {
+  token: String!
+  expireDate: Int!
+}
+
 type Post {
-  id: String
-  userId: String
-  tags: [String]
-  content: String
-  files: [String]
-  comments: [Comment]
-  threadId: String
+  id: String!
+  userId: String!
+  tags: [String!]!
+  content: String!
+  files: [String!]!
+  comments: [Comment!]!
+  threadId: String!
   error: Error!
 }
 
 type Comment {
-  id: String
-  userId: String
-  postId: String
-  threadId: String
-  files: [String]
-  content: String
+  id: String!
+  userId: String!
+  postId: String!
+  threadId: String!
+  files: [String!]!
+  content: String!
   error: Error!
 }
 
 type EmailVerified {
-  verified: Boolean
-  dateValidated: String
-  email: String
+  verified: Boolean!
+  dateValidated: String!
+  email: String!
   error: Error!
 }
 
 type Login {
   userId: String!
   email: String!
-  token: String!
+  token: UserToken!
   error: Error!
 }
 
@@ -75,11 +80,14 @@ input CreateUser {
   major: String!
   minor: String
   willingToHelp: Boolean!
+  firstName: String!
+  lastName: String!
 }
 
 input LoginInput {
   email: String!
   password: String!
+  token: String!
 }
 
 input UserInput {
@@ -116,6 +124,7 @@ input CreatePost {
   content: String!
   files: [String]
   threadId: String!
+  token: String!
 }
 
 input CreateComment {
@@ -124,6 +133,7 @@ input CreateComment {
   files: [String]
   threadId: String!
   postId: String!
+  token: String!
 }
 
 input VerifyEmailInput {

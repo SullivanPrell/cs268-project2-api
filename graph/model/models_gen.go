@@ -3,13 +3,13 @@
 package model
 
 type Comment struct {
-	ID       *string   `json:"id"`
-	UserID   *string   `json:"userId"`
-	PostID   *string   `json:"postId"`
-	ThreadID *string   `json:"threadId"`
-	Files    []*string `json:"files"`
-	Content  *string   `json:"content"`
-	Error    *Error    `json:"error"`
+	ID       string   `json:"id"`
+	UserID   string   `json:"userId"`
+	PostID   string   `json:"postId"`
+	ThreadID string   `json:"threadId"`
+	Files    []string `json:"files"`
+	Content  string   `json:"content"`
+	Error    *Error   `json:"error"`
 }
 
 type CommentInput struct {
@@ -30,6 +30,7 @@ type CreateComment struct {
 	Files    []*string `json:"files"`
 	ThreadID string    `json:"threadId"`
 	PostID   string    `json:"postId"`
+	Token    string    `json:"token"`
 }
 
 type CreatePost struct {
@@ -37,6 +38,7 @@ type CreatePost struct {
 	Content  string    `json:"content"`
 	Files    []*string `json:"files"`
 	ThreadID string    `json:"threadId"`
+	Token    string    `json:"token"`
 }
 
 type CreateUser struct {
@@ -46,41 +48,44 @@ type CreateUser struct {
 	Major         string  `json:"major"`
 	Minor         *string `json:"minor"`
 	WillingToHelp bool    `json:"willingToHelp"`
+	FirstName     string  `json:"firstName"`
+	LastName      string  `json:"lastName"`
 }
 
 type EmailVerified struct {
-	Verified      *bool   `json:"verified"`
-	DateValidated *string `json:"dateValidated"`
-	Email         *string `json:"email"`
-	Error         *Error  `json:"error"`
+	Verified      bool   `json:"verified"`
+	DateValidated string `json:"dateValidated"`
+	Email         string `json:"email"`
+	Error         *Error `json:"error"`
 }
 
 type Error struct {
-	Error   bool   `json:"error"`
-	Code    *int   `json:"code"`
-	Message string `json:"Message"`
+	Errors  bool   `json:"errors"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }
 
 type Login struct {
-	UserID string `json:"userId"`
-	Email  string `json:"email"`
-	Token  string `json:"token"`
-	Error  *Error `json:"error"`
+	UserID string     `json:"userId"`
+	Email  string     `json:"email"`
+	Token  *UserToken `json:"token"`
+	Error  *Error     `json:"error"`
 }
 
 type LoginInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Token    string `json:"token"`
 }
 
 type Post struct {
-	ID       *string    `json:"id"`
-	UserID   *string    `json:"userId"`
-	Tags     []*string  `json:"tags"`
-	Content  *string    `json:"content"`
-	Files    []*string  `json:"files"`
+	ID       string     `json:"id"`
+	UserID   string     `json:"userId"`
+	Tags     []string   `json:"tags"`
+	Content  string     `json:"content"`
+	Files    []string   `json:"files"`
 	Comments []*Comment `json:"comments"`
-	ThreadID *string    `json:"threadId"`
+	ThreadID string     `json:"threadId"`
 	Error    *Error     `json:"error"`
 }
 
@@ -97,27 +102,32 @@ type PostsInput struct {
 }
 
 type User struct {
-	ID            *string        `json:"id"`
-	Email         *string        `json:"email"`
-	FirstName     *string        `json:"firstName"`
-	LastName      *string        `json:"lastName"`
-	DateOfBirth   *string        `json:"dateOfBirth"`
-	Major         *string        `json:"major"`
-	Minor         *string        `json:"minor"`
-	WillingToHelp *bool          `json:"willingToHelp"`
+	ID            string         `json:"_id"`
+	Email         string         `json:"email"`
+	FirstName     string         `json:"firstName"`
+	LastName      string         `json:"lastName"`
+	DateOfBirth   string         `json:"dateOfBirth"`
+	Major         string         `json:"major"`
+	Minor         string         `json:"minor"`
+	WillingToHelp bool           `json:"willingToHelp"`
 	Posts         []*Post        `json:"posts"`
 	Comments      []*Comment     `json:"comments"`
-	PostIds       []*string      `json:"postIds"`
-	CommentIds    []*string      `json:"commentIds"`
-	ClassesTaken  []*string      `json:"classesTaken"`
-	PasswordHash  *string        `json:"passwordHash"`
+	PostIds       []string       `json:"postIds"`
+	CommentIds    []string       `json:"commentIds"`
+	ClassesTaken  []string       `json:"classesTaken"`
 	EmailVerified *EmailVerified `json:"emailVerified"`
+	Token         *UserToken     `json:"token"`
 	Error         *Error         `json:"error"`
 }
 
 type UserInput struct {
 	Email string `json:"email"`
 	Token string `json:"token"`
+}
+
+type UserToken struct {
+	Token      string `json:"token"`
+	ExpireDate int    `json:"expireDate"`
 }
 
 type VerifyEmail struct {

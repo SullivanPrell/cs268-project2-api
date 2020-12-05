@@ -1,159 +1,164 @@
 package user
 
 import (
-	"fmt"
-	"sort"
+	"cs268-project2-api/graph/model"
 
-	"github.com/couchbase/gocb"
-	"github.com/graphql-go/graphql"
 	"golang.org/x/crypto/bcrypt"
 	validator "gopkg.in/validator.v2"
 )
 
-/*
-	TODO: Update user validation to deal with new fields in the User Struct in main
-	TODO: Determine what is needed for new user creation with the new fields
-	TODO: Hold it all together and keep moving forward!!*/
-
-*/
 type UserValidator struct {
-	FName       string `validate:"nonzero,min=2,max=100"`
-	LName       string `validate:"nonzero,min=2,max=100"`
-	Email       string `validate:"nonzero"`
-	PhoneNumber string `validate:"min=4,max=40,regexp=^(\(?\+?[0-9]*\)?)?[0-9_\- \(\)]*$"` // http://regexlib.com/REDetails.aspx?regexp_id=73
-	Type        string `validate:"nonzero"`
-	ID          string `validate:"nonzero"`
-	Password    string `validate:"min=14,max=350"`
+	FName         string `validate:"nonzero,min=2,max=100"`
+	LName         string `validate:"nonzero,min=2,max=100"`
+	Email         string `validate:"nonzero"`
+	Password      string `validate:"min=10,max=350"`
+	ID            string `validate:"nonzero"`
+	Major         string `validate:"nonzero"`
+	Minor         string `validate:"nonzero"`
+	DateOfBirth   string `validate:"nonzero"`
+	WillingToHelp bool   `validate:"nonzero"`
 }
 
-func ValidateInfo(params graphql.ResolveParams) ValidatedUser {
-	idHash, err := bcrypt.GenerateFromPassword([]byte(params.Args["email"].(string)), 10)
+type Errors struct {
+	errors    bool
+	errorList []string
+}
+
+type ValidUser struct {
+	Email         string
+	Password      string
+	PasswordHash  string
+	DateOfBirth   string
+	Major         string
+	Minor         string
+	WillingToHelp bool
+	ID            string
+	FName         string
+	LName         string
+}
+
+// TODO: Fix errors
+
+func ValidateInfo(apiUser model.CreateUser) (ValidUser, model.Error) {
+	errors := model.Error{}
+	returnUser := ValidUser{}
+	idHash, err := bcrypt.GenerateFromPassword([]byte(apiUser.Email), 10)
+	if err != nil {
+		errors.Errors = true
+		errors.Message = "Failed to encrypt ID"
+		errors.Code = 500
+		return returnUser, errors
+	}
 	validateUser := UserValidator{
-		FName:       params.Args["fname"].(string),
-		LName:       params.Args["lname"].(string),
-		Email:       params.Args["email"].(string),
-		PhoneNumber: params.Args["phonenumber"].(string),
-		Type:        params.Args["type"].(string),
-		ID:          string(idHash),
-		Password:    params.Args["password"].(string),
+		Email:         apiUser.Email,
+		FName:         apiUser.FirstName,
+		LName:         apiUser.LastName,
+		Password:      apiUser.Password,
+		Major:         apiUser.Major,
+		Minor:         *apiUser.Minor,
+		DateOfBirth:   apiUser.DateOfBirth,
+		WillingToHelp: apiUser.WillingToHelp,
+		ID:            string(idHash),
 	}
 
-	if err != nil {
-		//TODO: Handle
-	}
 	validateUser.ID = string(idHash)
 
 	err = validator.Validate(validateUser)
-	var errOuts []string
-	var userValid bool
-	if err == nil {
-		//println("Values are valid!")
-		userValid = true
-	} else {
-		errs := err.(validator.ErrorMap)
-
-		for f, e := range errs {
-			errOuts = append(errOuts, fmt.Sprintf("\t - %s (%v)\n", f, e))
-		}
-
-		sort.Strings(errOuts)
-		userValid = false
-	}
-	passHash, err := bcrypt.GenerateFromPassword([]byte(params.Args["password"].(string)), 12)
 	if err != nil {
-		//TODO: handle
+		errors.Errors = true
+		errors.Message = "Error in validation of user info. Please follow website guidelines."
+		errors.Code = 400
+		return returnUser, errors
+	}
+	passHash, err := bcrypt.GenerateFromPassword([]byte(apiUser.Password), 12)
+	if err != nil {
+		errors.Errors = true
+		errors.Message = "Error when hashing password."
+		errors.Code = 500
+		return returnUser, errors
 	}
 
-	var classes []string
-	classes = append(classes, "")
-
-	returnUser := ValidatedUser{
-		ValidUser: User{
-			FName:       params.Args["fname"].(string),
-			LName:       params.Args["lname"].(string),
-			Email:       params.Args["email"].(string),
-			PhoneNumber: params.Args["phonenumber"].(string),
-			Type:        params.Args["type"].(string),
-			ID:          string(idHash),
-			Password:    string(passHash),
-			Classrooms:  classes,
-		},
-
-		UserValid: userValid,
-		Errors:    errOuts,
+	returnUser = ValidUser{
+		Email:         apiUser.Email,
+		FName:         apiUser.FirstName,
+		LName:         apiUser.LastName,
+		Password:      apiUser.Password,
+		PasswordHash:  string(passHash),
+		Major:         apiUser.Major,
+		Minor:         *apiUser.Minor,
+		DateOfBirth:   apiUser.DateOfBirth,
+		WillingToHelp: apiUser.WillingToHelp,
+		ID:            string(idHash),
 	}
-	newToken, tokenErr := GenToken(params.Args["email"].(string), returnUser.ValidUser.ID)
-	returnUser.ValidUser.Token = newToken
-	if tokenErr.Error {
-		returnUser.Errors = append(returnUser.Errors, tokenErr.Message)
-	}
-	return returnUser
+	errors.Errors = false
+
+	return returnUser, errors
 }
 
-func NewUser(userInfo ValidatedUser, collection *gocb.Collection) (UserToken, MutationPayload) {
-	returnErr := MutationPayload{}
-	returnErr.Success = true
-	returnToken := userInfo.ValidUser.Token
-	if userInfo.UserValid {
-		exists, _ := UserExist(userInfo.ValidUser.Email, collection)
-		if exists {
-			returnErr.Success = false
-			returnErr.Errors = append(returnErr.Errors, "Email already in use!")
-			returnErr.Token = ""
-			returnToken.Token = ""
-			returnToken.ExpireDate = 0000
+// func NewUser(userInfo ValidatedUser, collection *gocb.Collection) (UserToken, MutationPayload) {
+// 	returnErr := MutationPayload{}
+// 	returnErr.Success = true
+// 	returnToken := userInfo.ValidUser.Token
+// 	if userInfo.UserValid {
+// 		exists, _ := UserExist(userInfo.ValidUser.Email, collection)
+// 		if exists {
+// 			returnErr.Success = false
+// 			returnErr.Errors = append(returnErr.Errors, "Email already in use!")
+// 			returnErr.Token = ""
+// 			returnToken.Token = ""
+// 			returnToken.ExpireDate = 0000
 
-		} else {
-			_, err := collection.Upsert(userInfo.ValidUser.Email, userInfo.ValidUser, &gocb.UpsertOptions{})
-			if err != nil {
-				returnErr.Success = false
-				returnErr.Errors = append(returnErr.Errors, "Account Creation Error, please try again later. Dev Code: ERRNEWUSRDBUP")
-				returnErr.Token = ""
-				returnToken.Token = ""
-				returnToken.ExpireDate = 0000
-			}
+// 		} else {
+// 			_, err := collection.Upsert(userInfo.ValidUser.Email, userInfo.ValidUser, &gocb.UpsertOptions{})
+// 			if err != nil {
+// 				returnErr.Success = false
+// 				returnErr.Errors = append(returnErr.Errors, "Account Creation Error, please try again later. Dev Code: ERRNEWUSRDBUP")
+// 				returnErr.Token = ""
+// 				returnToken.Token = ""
+// 				returnToken.ExpireDate = 0000
+// 			}
 
-		}
+// 		}
 
-	} else {
-		returnErr.Errors = append(returnErr.Errors, userInfo.Errors...)
-		returnErr.Success = false
-		returnErr.Errors = append(returnErr.Errors, "Account Creation Error, please try again later. Dev Code: ERRNEWUSRNVU")
-		returnErr.Token = ""
-		returnToken.Token = ""
-		returnToken.ExpireDate = 0000
-		return returnToken, returnErr
-	}
+// 	} else {
+// 		returnErr.Errors = append(returnErr.Errors, userInfo.Errors...)
+// 		returnErr.Success = false
+// 		returnErr.Errors = append(returnErr.Errors, "Account Creation Error, please try again later. Dev Code: ERRNEWUSRNVU")
+// 		returnErr.Token = ""
+// 		returnToken.Token = ""
+// 		returnToken.ExpireDate = 0000
+// 		return returnToken, returnErr
+// 	}
 
-	return returnToken, returnErr
-}
+// 	return returnToken, returnErr
+// }
 
-func UpdateUser(modifyDetails ModifyUser, collection *gocb.Collection) bool {
-	//TODO: Implement
-	return false
-}
+// func UpdateUser(modifyDetails ModifyUser, collection *gocb.Collection) bool {
+// 	//TODO: Implement
+// 	return false
+// }
 
-func RemoveUser(userInfo User) bool {
-	//TODO: Implement
-	return false
-}
+// func RemoveUser(userInfo User) bool {
+// 	//TODO: Implement
+// 	return false
+// }
 
-func UserExist(email string, collection *gocb.Collection) (bool, APIError) {
-	apiErr := APIError{}
-	checkUser, _ := collection.Get(email, nil)
-	//TODO: Swap to check exist function couchbase
-	// if err != nil {
-	// 	if err.error_name == "KEY_ENOENT" {
-	// 		return false, apiErr
-	// 	}
-	// 	apiErr.Error = true
-	// 	apiErr.Message = "Account Validation Error, please try again later."
-	// 	panic(err)
-	// 	return false, apiErr
-	// }
-	if checkUser != nil {
-		return true, apiErr
-	}
-	return false, apiErr
+// func UserExist(email string, collection *gocb.Collection) (bool, APIError) {
+// 	apiErr := APIError{}
+// 	checkUser, _ := collection.Get(email, nil)
+// 	//TODO: Swap to check exist function couchbase
+// 	// if err != nil {
+// 	// 	if err.error_name == "KEY_ENOENT" {
+// 	// 		return false, apiErr
+// 	// 	}
+// 	// 	apiErr.Error = true
+// 	// 	apiErr.Message = "Account Validation Error, please try again later."
+// 	// 	panic(err)
+// 	// 	return false, apiErr
+// 	// }
+// 	if checkUser != nil {
+// 		return true, apiErr
+// 	}
+// 	return false, apiErr
 
-}
+// }
