@@ -1,4 +1,4 @@
-package auth
+package userAuth
 
 func UserAuth() {
 	//TODO: Implement

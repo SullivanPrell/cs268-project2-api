@@ -9,11 +9,13 @@ import (
 	"cs268-project2-api/graph/model"
 	"cs268-project2-api/mongo"
 	"cs268-project2-api/user"
+	"cs268-project2-api/userAuth"
 	"fmt"
 )
 
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.Login, error) {
-	panic(fmt.Errorf("not implemented"))
+	loginReturn := userAuth.Login(input)
+	return &loginReturn, nil
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUser) (*model.User, error) {
@@ -78,7 +80,7 @@ func (r *mutationResolver) VerifyEmail(ctx context.Context, input model.VerifyEm
 }
 
 func (r *queryResolver) User(ctx context.Context, input model.UserInput) (*model.User, error) {
-	returnUser := mongo.FindOneUser(input.Email)
+	returnUser := mongo.FindOneUser(input.Email, false)
 	return &returnUser, nil
 }
 

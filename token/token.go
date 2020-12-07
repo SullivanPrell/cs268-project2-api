@@ -1,4 +1,4 @@
-package auth
+package tokenGen
 
 import (
 	"cs268-project2-api/graph/model"
@@ -12,11 +12,12 @@ import (
 )
 
 type Claims struct {
-	Email string `json:"email"`
+	Email  string `json:"email"`
+	UserID string `json:"userID"`
 	jwt.StandardClaims
 }
 
-func GenToken(email string) (model.UserToken, model.Error) {
+func GenToken(email string, userID string) (model.UserToken, model.Error) {
 	newError := model.Error{}
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -27,7 +28,8 @@ func GenToken(email string) (model.UserToken, model.Error) {
 	jwtSecret := fmt.Sprintf("%s%s", os.Getenv("JWT_SECRET"), email)
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := Claims{
-		Email: email,
+		Email:  email,
+		UserID: userID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
@@ -38,7 +40,7 @@ func GenToken(email string) (model.UserToken, model.Error) {
 	// Create the JWT string
 	tokenString, err := token.SignedString([]byte(jwtSecret))
 	returnUserToken := model.UserToken{
-		Token:     tokenString,
+		Token:      tokenString,
 		ExpireDate: int(expirationTime.Unix()),
 	}
 	if err != nil {
@@ -49,7 +51,7 @@ func GenToken(email string) (model.UserToken, model.Error) {
 	return returnUserToken, newError
 }
 
-func ValidateToken(tokenString string, userTokenInfo model.UserToken, email string) bool {
+func ValidateToken(tokenString string, userTokenInfo model.UserToken, email string) (bool, jwt.MapClaims) {
 
 	// Initialize a new instance of `Claims`
 	if tokenString == userTokenInfo.Token {
@@ -57,7 +59,7 @@ func ValidateToken(tokenString string, userTokenInfo model.UserToken, email stri
 		// Pass 1 Tokens are equal!
 		if time.Now().Unix() > int64(userTokenInfo.ExpireDate) {
 			// TOKEN EXPIRED !
-			return false
+			return false, jwt.MapClaims{}
 		} else {
 			claims := &Claims{}
 			//getEnv()
@@ -72,67 +74,36 @@ func ValidateToken(tokenString string, userTokenInfo model.UserToken, email stri
 			if err != nil {
 				if err == jwt.ErrSignatureInvalid {
 
-					return false
+					return false, jwt.MapClaims{}
 				}
 			}
 			if !tkn.Valid {
 
-				return false
+				return false, jwt.MapClaims{}
 			}
-			return true
+			if claims, ok := tkn.Claims.(jwt.MapClaims); ok && tkn.Valid {
+				return true, claims
+			}
+			return true, jwt.MapClaims{}
 		}
 
 	} else {
-		return false
+		return false, jwt.MapClaims{}
 	}
 
 }
 
-//func RenewToken(email string, id string, tokenString string, tokenExpire int64) (UserToken, APIError) {
-//	renewToken := UserToken{}
-//	renewError := APIError{}
-//	// If expires in 30 seconds
-//	if tokenExpire > (time.Now().Add(time.Hour * 24)).Unix() {
-//		// Not expired
-//	} else {
-//		// Generate a new token, pass token back
-//		renewToken, renewError = GenToken(email, id)
-//
-//	}
-//
-//	return renewToken, renewError
-//
-//}
-//
-//func GetCurrentToken(email string, collection *gocb.Collection) (UserToken, APIError) {
-//	returnToken := UserToken{}
-//	returnError := APIError{}
-//
-//	//TODO: Convert to Mongo from Couchbase
-//
-//	ops := []gocb.LookupInSpec{
-//		gocb.GetSpec("token.token", &gocb.GetSpecOptions{}),
-//		gocb.GetSpec("token.expiredate", &gocb.GetSpecOptions{}),
-//	}
-//	getResult, err := collection.LookupIn(email, ops, &gocb.LookupInOptions{})
-//	if err != nil {
-//		panic(err)
-//		//TODO: Create API Err
-//	}
-//
-//	var currentToken string
-//	var currentExpireDate int64
-//	err = getResult.ContentAt(0, &currentToken)
-//	if err != nil {
-//		panic(err)
-//		// Create API Err
-//	}
-//	err = getResult.ContentAt(1, &currentExpireDate)
-//	if err != nil {
-//		panic(err)
-//		// Create API Err
-//	}
-//	returnToken.Token = currentToken
-//	returnToken.ExpireDate = currentExpireDate
-//	return returnToken, returnError
-//}
+func RenewToken(email string, userID string, tokenInfo model.UserToken) (bool, model.UserToken, model.Error) {
+	renewToken := model.UserToken{}
+	renewError := model.Error{}
+	// If expires in 4 hours
+	if int64(tokenInfo.ExpireDate) > (time.Now().Add(time.Hour * 4)).Unix() {
+		// Not expired
+		return false, tokenInfo, renewError
+	} else {
+		// Generate a new token, pass token back
+		renewToken, renewError = GenToken(email, userID)
+		return true, renewToken, renewError
+	}
+
+}
