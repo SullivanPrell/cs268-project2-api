@@ -7,6 +7,7 @@ import (
 	validUser "cs268-project2-api/user"
 	"fmt"
 	"os"
+	"os/user"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -17,7 +18,7 @@ import (
 )
 
 type NewUser struct {
-	ID            string              `json:"_id"`
+	ID            string              `bson:"_id" json:"_id"`
 	Email         string              `json:"email"`
 	FirstName     string              `json:"firstName"`
 	LastName      string              `json:"lastName"`
@@ -32,10 +33,11 @@ type NewUser struct {
 	Token         model.UserToken     `json:"token"`
 }
 
-func FindOneUser(email string) model.User {
+func FindOneUser(id string) model.User {
 	user := model.User{}
 	err := godotenv.Load(".env")
 	if err != nil {
+		fmt.Println(err)
 		user.Error.Errors = true
 		user.Error.Message = "Unable to load environment variable"
 		user.Error.Code = 500
@@ -52,6 +54,7 @@ func FindOneUser(email string) model.User {
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
+		fmt.Println(err)
 		user.Error.Errors = true
 		user.Error.Message = "Unable to connect to mongo instance"
 		user.Error.Code = 503
@@ -59,6 +62,7 @@ func FindOneUser(email string) model.User {
 	}
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
+			fmt.Println(err)
 			user.Error.Errors = true
 			user.Error.Message = "Unable to disconnect from mongo instance"
 			user.Error.Code = 503
@@ -66,6 +70,7 @@ func FindOneUser(email string) model.User {
 	}()
 	// Ping the primary
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		fmt.Println(err)
 		user.Error.Errors = true
 		user.Error.Message = "Unable to ping mongo instance"
 		user.Error.Code = 503
@@ -76,12 +81,13 @@ func FindOneUser(email string) model.User {
 
 	filter := bson.M{
 		"$and": []interface{}{
-			bson.M{"id": email}}}
+			bson.M{"_id": id}}}
 
 	ctx, cancelFilter := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancelFilter()
 	err = collection.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
+		fmt.Println(err)
 		user.Error.Errors = true
 		user.Error.Message = "Error when finding user"
 		user.Error.Code = 500
@@ -162,7 +168,11 @@ func CreateUser(validatedUser validUser.ValidUser) (model.User, model.Error) {
 			Verified:      false,
 			DateValidated: "",
 			Email:         validatedUser.Email,
-			Error:         &model.Error{},
+			Error: &model.Error{
+				Errors:  false,
+				Code:    0,
+				Message: "",
+			},
 		},
 		Token: token,
 	}
@@ -174,6 +184,70 @@ func CreateUser(validatedUser validUser.ValidUser) (model.User, model.Error) {
 		errors.Code = 500
 		return returnLogin, errors
 	}
+	user := FindOneUser(validatedUser.ID)
 
-	return FindOneUser(validatedUser.Email), errors
+	return user, errors
+}
+
+func UserExists(email string) (bool, model.Error) {
+	errors := model.Error{}
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println(err)
+		errors.Errors = true
+		errors.Message = "Unable to load environment variable"
+		errors.Code = 500
+		return false, errors
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+	// Replace the uri string with your MongoDB deployment's connection string.
+	uri := fmt.Sprintf("mongodb://%s:%s@%s/?authSource=%s", os.Getenv("MONGO_USR"), os.Getenv("MONGO_PASS"), os.Getenv("MONGO_URL"), os.Getenv("MONGO_AUTHDB"))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	if err != nil {
+		fmt.Println(err)
+		errors.Errors = true
+		errors.Message = "Unable to connect to mongo instance"
+		errors.Code = 503
+		return false, errors
+	}
+	defer func() {
+		if err = client.Disconnect(ctx); err != nil {
+			fmt.Println(err)
+			errors.Errors = true
+			errors.Message = "Unable to disconnect from mongo instance"
+			errors.Code = 503
+		}
+	}()
+	// Ping the primary
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		fmt.Println(err)
+		errors.Errors = true
+		errors.Message = "Unable to ping mongo instance"
+		errors.Code = 503
+		return false, errors
+	}
+
+	collection := client.Database("uwecforum").Collection("users")
+
+	filter := bson.M{
+		"$and": []interface{}{
+			bson.M{"email": email}}}
+
+	ctx, cancelFilter := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancelFilter()
+	err = collection.FindOne(ctx, filter).Decode(&errors)
+	if err != nil {
+		fmt.Println(err)
+		errors.Errors = true
+		errors.Message = "Error when finding user"
+		errors.Code = 500
+		return false, errors
+	}
+
 }

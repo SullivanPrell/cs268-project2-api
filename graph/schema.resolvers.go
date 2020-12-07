@@ -61,6 +61,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUse
 			Error:         &errors,
 		}, nil
 	}
+	user.Error = &errors
 	return &user, nil
 }
 
