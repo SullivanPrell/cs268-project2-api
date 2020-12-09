@@ -4,7 +4,7 @@ import (
 	"context"
 	"cs268-project2-api/graph/model"
 	token2 "cs268-project2-api/token"
-	validUser "cs268-project2-api/user"
+	"cs268-project2-api/validator"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"os"
@@ -31,7 +31,7 @@ type NewUser struct {
 	ClassesTaken  []string            `json:"classesTaken"`
 	EmailVerified model.EmailVerified `json:"emailVerified"`
 	Token         model.UserToken     `json:"token"`
-	Password string `json:"password"`
+	Password      string              `json:"password"`
 }
 
 func FindOneUser(idOrEmail string, usingID bool) model.User {
@@ -103,7 +103,7 @@ func FindOneUser(idOrEmail string, usingID bool) model.User {
 	return user
 }
 
-func CreateUser(validatedUser validUser.ValidUser) (model.User, model.Error) {
+func CreateUser(validatedUser validator.ValidUser) (model.User, model.Error) {
 	errors := model.Error{}
 	returnLogin := model.User{}
 	err := godotenv.Load(".env")
@@ -189,7 +189,7 @@ func CreateUser(validatedUser validUser.ValidUser) (model.User, model.Error) {
 				Message: "",
 			},
 		},
-		Token: token,
+		Token:    token,
 		Password: string(hash),
 	}
 	_, err = collection.InsertOne(ctx, newUser)
@@ -486,4 +486,145 @@ func GetUserToken(id string) (model.UserToken, model.Error) {
 	return *user.Token, errors
 }
 
+func UpdateUserPosts(userID string, postID string) (bool, model.Error) {
+	fmt.Println("Entered update")
+	errors := model.Error{
+		Errors:  false,
+		Code:    0,
+		Message: "",
+	}
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println(err)
+		errors.Errors = true
+		errors.Message = "Unable to load environment variable"
+		errors.Code = 500
+		return false, errors
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+	// Replace the uri string with your MongoDB deployment's connection string.
+	uri := fmt.Sprintf("mongodb://%s:%s@%s/?authSource=%s", os.Getenv("MONGO_USR"), os.Getenv("MONGO_PASS"), os.Getenv("MONGO_URL"), os.Getenv("MONGO_AUTHDB"))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	if err != nil {
+		fmt.Println(err)
+		errors.Errors = true
+		errors.Message = "Unable to connect to mongo instance"
+		errors.Code = 503
+		return false, errors
+	}
+	defer func() {
+		if err = client.Disconnect(ctx); err != nil {
+			fmt.Println(err)
+			errors.Errors = true
+			errors.Message = "Unable to disconnect from mongo instance"
+			errors.Code = 503
+		}
+	}()
+	// Ping the primary
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		fmt.Println(err)
+		errors.Errors = true
+		errors.Message = "Unable to ping mongo instance"
+		errors.Code = 503
+		return false, errors
+	}
 
+	collection := client.Database("uwecforum").Collection("users")
+	filter := bson.M{
+		"$and": []interface{}{
+			bson.M{"_id": userID}}}
+
+	update := bson.M{
+		"$push": bson.M{"postids": postID},
+	}
+
+	// 8) Find one result and update it
+	_, err = collection.UpdateOne(ctx, filter, update)
+	fmt.Println("Should have executed")
+	if err != nil {
+		fmt.Println(err)
+		errors.Errors = true
+		errors.Message = "Post update failed"
+		errors.Code = 500
+		return false, errors
+	}
+	return true, errors
+}
+
+func UpdateUserComments(userID string, commentID string) (bool, model.Error) {
+	errors := model.Error{}
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println(err)
+		errors.Errors = true
+		errors.Message = "Unable to load environment variable"
+		errors.Code = 500
+		return false, errors
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+	// Replace the uri string with your MongoDB deployment's connection string.
+	uri := fmt.Sprintf("mongodb://%s:%s@%s/?authSource=%s", os.Getenv("MONGO_USR"), os.Getenv("MONGO_PASS"), os.Getenv("MONGO_URL"), os.Getenv("MONGO_AUTHDB"))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	if err != nil {
+		fmt.Println(err)
+		errors.Errors = true
+		errors.Message = "Unable to connect to mongo instance"
+		errors.Code = 503
+		return false, errors
+	}
+	defer func() {
+		if err = client.Disconnect(ctx); err != nil {
+			fmt.Println(err)
+			errors.Errors = true
+			errors.Message = "Unable to disconnect from mongo instance"
+			errors.Code = 503
+		}
+	}()
+	// Ping the primary
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		fmt.Println(err)
+		errors.Errors = true
+		errors.Message = "Unable to ping mongo instance"
+		errors.Code = 503
+		return false, errors
+	}
+
+	collection := client.Database("uwecforum").Collection("users")
+	filter := bson.M{
+		"$and": []interface{}{
+			bson.M{"_id": userID}}}
+
+	update := bson.M{
+		"push": bson.M{"commentids": commentID},
+	}
+
+	// 7) Create an instance of an options and set the desired options
+	upsert := true
+	after := options.After
+	opt := options.FindOneAndUpdateOptions{
+		ReturnDocument: &after,
+		Upsert:         &upsert,
+	}
+
+	// 8) Find one result and update it
+	result := collection.FindOneAndUpdate(ctx, filter, update, &opt)
+	if result.Err() != nil {
+		errors.Errors = true
+		errors.Message = "Comment update failed"
+		errors.Code = 500
+		return false, errors
+	}
+	return true, errors
+}

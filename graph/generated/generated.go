@@ -46,7 +46,6 @@ type ComplexityRoot struct {
 	Comment struct {
 		Content  func(childComplexity int) int
 		Error    func(childComplexity int) int
-		Files    func(childComplexity int) int
 		ID       func(childComplexity int) int
 		PostID   func(childComplexity int) int
 		ThreadID func(childComplexity int) int
@@ -78,18 +77,24 @@ type ComplexityRoot struct {
 		CreatePost    func(childComplexity int, input model.CreatePost) int
 		CreateUser    func(childComplexity int, input model.CreateUser) int
 		Login         func(childComplexity int, input model.LoginInput) int
-		VerifyEmail   func(childComplexity int, input model.VerifyEmailInput) int
 	}
 
 	Post struct {
-		Comments func(childComplexity int) int
-		Content  func(childComplexity int) int
-		Error    func(childComplexity int) int
-		Files    func(childComplexity int) int
-		ID       func(childComplexity int) int
-		Tags     func(childComplexity int) int
-		ThreadID func(childComplexity int) int
-		UserID   func(childComplexity int) int
+		Class     func(childComplexity int) int
+		Comments  func(childComplexity int) int
+		Content   func(childComplexity int) int
+		Error     func(childComplexity int) int
+		ID        func(childComplexity int) int
+		SubHeader func(childComplexity int) int
+		Tags      func(childComplexity int) int
+		ThreadID  func(childComplexity int) int
+		Title     func(childComplexity int) int
+		UserID    func(childComplexity int) int
+	}
+
+	Posts struct {
+		Error func(childComplexity int) int
+		Posts func(childComplexity int) int
 	}
 
 	Query struct {
@@ -136,7 +141,6 @@ type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.CreateUser) (*model.User, error)
 	CreatePost(ctx context.Context, input model.CreatePost) (*model.Post, error)
 	CreateComment(ctx context.Context, input model.CreateComment) (*model.Comment, error)
-	VerifyEmail(ctx context.Context, input model.VerifyEmailInput) (*model.VerifyEmail, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context, input model.UserInput) (*model.User, error)
@@ -174,13 +178,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Comment.Error(childComplexity), true
-
-	case "Comment.files":
-		if e.complexity.Comment.Files == nil {
-			break
-		}
-
-		return e.complexity.Comment.Files(childComplexity), true
 
 	case "Comment.id":
 		if e.complexity.Comment.ID == nil {
@@ -335,17 +332,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.Login(childComplexity, args["input"].(model.LoginInput)), true
 
-	case "Mutation.VerifyEmail":
-		if e.complexity.Mutation.VerifyEmail == nil {
+	case "Post.class":
+		if e.complexity.Post.Class == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_VerifyEmail_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.VerifyEmail(childComplexity, args["input"].(model.VerifyEmailInput)), true
+		return e.complexity.Post.Class(childComplexity), true
 
 	case "Post.comments":
 		if e.complexity.Post.Comments == nil {
@@ -368,19 +360,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Post.Error(childComplexity), true
 
-	case "Post.files":
-		if e.complexity.Post.Files == nil {
-			break
-		}
-
-		return e.complexity.Post.Files(childComplexity), true
-
 	case "Post.id":
 		if e.complexity.Post.ID == nil {
 			break
 		}
 
 		return e.complexity.Post.ID(childComplexity), true
+
+	case "Post.subHeader":
+		if e.complexity.Post.SubHeader == nil {
+			break
+		}
+
+		return e.complexity.Post.SubHeader(childComplexity), true
 
 	case "Post.tags":
 		if e.complexity.Post.Tags == nil {
@@ -396,12 +388,33 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Post.ThreadID(childComplexity), true
 
+	case "Post.title":
+		if e.complexity.Post.Title == nil {
+			break
+		}
+
+		return e.complexity.Post.Title(childComplexity), true
+
 	case "Post.userId":
 		if e.complexity.Post.UserID == nil {
 			break
 		}
 
 		return e.complexity.Post.UserID(childComplexity), true
+
+	case "Posts.error":
+		if e.complexity.Posts.Error == nil {
+			break
+		}
+
+		return e.complexity.Posts.Error(childComplexity), true
+
+	case "Posts.posts":
+		if e.complexity.Posts.Posts == nil {
+			break
+		}
+
+		return e.complexity.Posts.Posts(childComplexity), true
 
 	case "Query.Comment":
 		if e.complexity.Query.Comment == nil {
@@ -713,9 +726,11 @@ type Post {
   userId: String!
   tags: [String!]!
   content: String!
-  files: [String!]!
   comments: [Comment!]!
   threadId: String!
+  subHeader: String!
+  title: String!
+  class: String!
   error: Error!
 }
 
@@ -724,7 +739,6 @@ type Comment {
   userId: String!
   postId: String!
   threadId: String!
-  files: [String!]!
   content: String!
   error: Error!
 }
@@ -746,6 +760,11 @@ type Login {
 type VerifyEmail {
   success: Boolean!
   message: String!
+  error: Error!
+}
+
+type Posts {
+  posts: [Post!]!
   error: Error!
 }
 
@@ -798,7 +817,9 @@ input CommentsInput {
 input CreatePost {
   tags: [String]
   content: String!
-  files: [String]
+  title: String!
+  subHeader: String!
+  class: String!
   threadId: String!
   token: String!
 }
@@ -823,7 +844,6 @@ type Mutation {
   CreateUser(input: CreateUser!): User!
   CreatePost(input: CreatePost!): Post!
   CreateComment(input: CreateComment!): Comment!
-  VerifyEmail(input: VerifyEmailInput!): VerifyEmail!
 }
 
 type Query {
@@ -893,21 +913,6 @@ func (ec *executionContext) field_Mutation_Login_args(ctx context.Context, rawAr
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNLoginInput2cs268ᚑproject2ᚑapiᚋgraphᚋmodelᚐLoginInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_VerifyEmail_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.VerifyEmailInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNVerifyEmailInput2cs268ᚑproject2ᚑapiᚋgraphᚋmodelᚐVerifyEmailInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1182,41 +1187,6 @@ func (ec *executionContext) _Comment_threadId(ctx context.Context, field graphql
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Comment_files(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Comment",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Files, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]string)
-	fc.Result = res
-	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Comment_content(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
@@ -1842,48 +1812,6 @@ func (ec *executionContext) _Mutation_CreateComment(ctx context.Context, field g
 	return ec.marshalNComment2ᚖcs268ᚑproject2ᚑapiᚋgraphᚋmodelᚐComment(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_VerifyEmail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_VerifyEmail_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().VerifyEmail(rctx, args["input"].(model.VerifyEmailInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.VerifyEmail)
-	fc.Result = res
-	return ec.marshalNVerifyEmail2ᚖcs268ᚑproject2ᚑapiᚋgraphᚋmodelᚐVerifyEmail(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Post_id(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2024,41 +1952,6 @@ func (ec *executionContext) _Post_content(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Post_files(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Post",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Files, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]string)
-	fc.Result = res
-	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Post_comments(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2129,6 +2022,111 @@ func (ec *executionContext) _Post_threadId(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Post_subHeader(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Post",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SubHeader, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Post_title(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Post",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Post_class(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Post",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Class, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Post_error(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2138,6 +2136,76 @@ func (ec *executionContext) _Post_error(ctx context.Context, field graphql.Colle
 	}()
 	fc := &graphql.FieldContext{
 		Object:     "Post",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Error, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Error)
+	fc.Result = res
+	return ec.marshalNError2ᚖcs268ᚑproject2ᚑapiᚋgraphᚋmodelᚐError(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Posts_posts(ctx context.Context, field graphql.CollectedField, obj *model.Posts) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Posts",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Posts, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Post)
+	fc.Result = res
+	return ec.marshalNPost2ᚕᚖcs268ᚑproject2ᚑapiᚋgraphᚋmodelᚐPostᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Posts_error(ctx context.Context, field graphql.CollectedField, obj *model.Posts) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Posts",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -4421,11 +4489,27 @@ func (ec *executionContext) unmarshalInputCreatePost(ctx context.Context, obj in
 			if err != nil {
 				return it, err
 			}
-		case "files":
+		case "title":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("files"))
-			it.Files, err = ec.unmarshalOString2ᚕᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			it.Title, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "subHeader":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subHeader"))
+			it.SubHeader, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "class":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("class"))
+			it.Class, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4738,11 +4822,6 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "files":
-			out.Values[i] = ec._Comment_files(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "content":
 			out.Values[i] = ec._Comment_content(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4920,11 +4999,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "VerifyEmail":
-			out.Values[i] = ec._Mutation_VerifyEmail(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4967,11 +5041,6 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "files":
-			out.Values[i] = ec._Post_files(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "comments":
 			out.Values[i] = ec._Post_comments(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4982,8 +5051,55 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "subHeader":
+			out.Values[i] = ec._Post_subHeader(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "title":
+			out.Values[i] = ec._Post_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "class":
+			out.Values[i] = ec._Post_class(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "error":
 			out.Values[i] = ec._Post_error(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var postsImplementors = []string{"Posts"}
+
+func (ec *executionContext) _Posts(ctx context.Context, sel ast.SelectionSet, obj *model.Posts) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, postsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Posts")
+		case "posts":
+			out.Values[i] = ec._Posts_posts(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "error":
+			out.Values[i] = ec._Posts_error(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5792,25 +5908,6 @@ func (ec *executionContext) marshalNUserToken2ᚖcs268ᚑproject2ᚑapiᚋgraph�
 		return graphql.Null
 	}
 	return ec._UserToken(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNVerifyEmail2cs268ᚑproject2ᚑapiᚋgraphᚋmodelᚐVerifyEmail(ctx context.Context, sel ast.SelectionSet, v model.VerifyEmail) graphql.Marshaler {
-	return ec._VerifyEmail(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNVerifyEmail2ᚖcs268ᚑproject2ᚑapiᚋgraphᚋmodelᚐVerifyEmail(ctx context.Context, sel ast.SelectionSet, v *model.VerifyEmail) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._VerifyEmail(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNVerifyEmailInput2cs268ᚑproject2ᚑapiᚋgraphᚋmodelᚐVerifyEmailInput(ctx context.Context, v interface{}) (model.VerifyEmailInput, error) {
-	res, err := ec.unmarshalInputVerifyEmailInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

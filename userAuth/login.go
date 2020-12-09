@@ -43,6 +43,7 @@ func Login(userInput model.LoginInput) model.Login {
 			returnError.Code = 403
 			returnError.Message = "Incorrect Password"
 			loginReturn.Error = &returnError
+			return loginReturn
 		}
 
 		token, returnError := token2.GenToken(userInput.Email, id)
@@ -67,6 +68,7 @@ func Login(userInput model.LoginInput) model.Login {
 		fmt.Println("Token Login")
 		// Token Login
 		if token, _ := jwt.Parse(userInput.Token, nil); token != nil {
+			// Error is not needed here - we are ignoring and just want claims not validation
 			// We can parse and extract claims
 			claims := token.Claims.(jwt.MapClaims)
 			fmt.Println(claims["userID"].(string))

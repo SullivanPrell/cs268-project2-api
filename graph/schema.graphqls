@@ -37,9 +37,11 @@ type Post {
   userId: String!
   tags: [String!]!
   content: String!
-  files: [String!]!
   comments: [Comment!]!
   threadId: String!
+  subHeader: String!
+  title: String!
+  class: String!
   error: Error!
 }
 
@@ -48,7 +50,6 @@ type Comment {
   userId: String!
   postId: String!
   threadId: String!
-  files: [String!]!
   content: String!
   error: Error!
 }
@@ -70,6 +71,11 @@ type Login {
 type VerifyEmail {
   success: Boolean!
   message: String!
+  error: Error!
+}
+
+type Posts {
+  posts: [Post!]!
   error: Error!
 }
 
@@ -122,7 +128,9 @@ input CommentsInput {
 input CreatePost {
   tags: [String]
   content: String!
-  files: [String]
+  title: String!
+  subHeader: String!
+  class: String!
   threadId: String!
   token: String!
 }
@@ -147,7 +155,6 @@ type Mutation {
   CreateUser(input: CreateUser!): User!
   CreatePost(input: CreatePost!): Post!
   CreateComment(input: CreateComment!): Comment!
-  VerifyEmail(input: VerifyEmailInput!): VerifyEmail!
 }
 
 type Query {

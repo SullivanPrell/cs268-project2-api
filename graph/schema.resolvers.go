@@ -7,7 +7,7 @@ import (
 	"context"
 	"cs268-project2-api/graph/generated"
 	"cs268-project2-api/graph/model"
-	"cs268-project2-api/mongo"
+	"cs268-project2-api/post"
 	"cs268-project2-api/user"
 	"cs268-project2-api/userAuth"
 	"fmt"
@@ -19,68 +19,21 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUser) (*model.User, error) {
-	validatedUser, errors := user.ValidateInfo(input)
-	if errors.Errors == true {
-		fmt.Print(errors.Message)
-		return &model.User{
-			ID:            "",
-			Email:         "",
-			FirstName:     "",
-			LastName:      "",
-			DateOfBirth:   "",
-			Major:         "",
-			Minor:         "",
-			WillingToHelp: false,
-			Posts:         nil,
-			Comments:      nil,
-			PostIds:       nil,
-			CommentIds:    nil,
-			ClassesTaken:  nil,
-			EmailVerified: nil,
-			Token:         nil,
-			Error:         &errors,
-		}, nil
-	}
-	user, errors := mongo.CreateUser(validatedUser)
-	if errors.Errors == true {
-		fmt.Print(errors.Message)
-		return &model.User{
-			ID:            "",
-			Email:         "",
-			FirstName:     "",
-			LastName:      "",
-			DateOfBirth:   "",
-			Major:         "",
-			Minor:         "",
-			WillingToHelp: false,
-			Posts:         nil,
-			Comments:      nil,
-			PostIds:       nil,
-			CommentIds:    nil,
-			ClassesTaken:  nil,
-			EmailVerified: nil,
-			Token:         nil,
-			Error:         &errors,
-		}, nil
-	}
-	user.Error = &errors
-	return &user, nil
+	returnUser := user.CreateNewUser(input)
+	return &returnUser, nil
 }
 
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePost) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented"))
+	returnPost := post.CreateNewPost(input)
+	return &returnPost, nil
 }
 
 func (r *mutationResolver) CreateComment(ctx context.Context, input model.CreateComment) (*model.Comment, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) VerifyEmail(ctx context.Context, input model.VerifyEmailInput) (*model.VerifyEmail, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
 func (r *queryResolver) User(ctx context.Context, input model.UserInput) (*model.User, error) {
-	returnUser := mongo.FindOneUser(input.Email, false)
+	returnUser := user.FindUser(input)
 	return &returnUser, nil
 }
 
@@ -108,3 +61,11 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+

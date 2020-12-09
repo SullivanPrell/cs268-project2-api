@@ -3,13 +3,12 @@
 package model
 
 type Comment struct {
-	ID       string   `json:"id"`
-	UserID   string   `json:"userId"`
-	PostID   string   `json:"postId"`
-	ThreadID string   `json:"threadId"`
-	Files    []string `json:"files"`
-	Content  string   `json:"content"`
-	Error    *Error   `json:"error"`
+	ID       string `json:"id"`
+	UserID   string `json:"userId"`
+	PostID   string `json:"postId"`
+	ThreadID string `json:"threadId"`
+	Content  string `json:"content"`
+	Error    *Error `json:"error"`
 }
 
 type CommentInput struct {
@@ -34,11 +33,13 @@ type CreateComment struct {
 }
 
 type CreatePost struct {
-	Tags     []*string `json:"tags"`
-	Content  string    `json:"content"`
-	Files    []*string `json:"files"`
-	ThreadID string    `json:"threadId"`
-	Token    string    `json:"token"`
+	Tags      []*string `json:"tags"`
+	Content   string    `json:"content"`
+	Title     string    `json:"title"`
+	SubHeader string    `json:"subHeader"`
+	Class     string    `json:"class"`
+	ThreadID  string    `json:"threadId"`
+	Token     string    `json:"token"`
 }
 
 type CreateUser struct {
@@ -79,20 +80,27 @@ type LoginInput struct {
 }
 
 type Post struct {
-	ID       string     `json:"id"`
-	UserID   string     `json:"userId"`
-	Tags     []string   `json:"tags"`
-	Content  string     `json:"content"`
-	Files    []string   `json:"files"`
-	Comments []*Comment `json:"comments"`
-	ThreadID string     `json:"threadId"`
-	Error    *Error     `json:"error"`
+	ID        string     `json:"id"`
+	UserID    string     `json:"userId"`
+	Tags      []string   `json:"tags"`
+	Content   string     `json:"content"`
+	Comments  []*Comment `json:"comments"`
+	ThreadID  string     `json:"threadId"`
+	SubHeader string     `json:"subHeader"`
+	Title     string     `json:"title"`
+	Class     string     `json:"class"`
+	Error     *Error     `json:"error"`
 }
 
 type PostInput struct {
 	Email  string `json:"email"`
 	Token  string `json:"token"`
 	PostID string `json:"postId"`
+}
+
+type Posts struct {
+	Posts []*Post `json:"posts"`
+	Error *Error  `json:"error"`
 }
 
 type PostsInput struct {

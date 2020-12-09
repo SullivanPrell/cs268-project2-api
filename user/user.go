@@ -2,163 +2,148 @@ package user
 
 import (
 	"cs268-project2-api/graph/model"
-
-	"golang.org/x/crypto/bcrypt"
-	validator "gopkg.in/validator.v2"
+	"cs268-project2-api/mongo"
+	token2 "cs268-project2-api/token"
+	"cs268-project2-api/validator"
+	"fmt"
+	"github.com/dgrijalva/jwt-go"
 )
 
-type UserValidator struct {
-	FName         string `validate:"nonzero,min=2,max=100"`
-	LName         string `validate:"nonzero,min=2,max=100"`
-	Email         string `validate:"nonzero"`
-	Password      string `validate:"min=10,max=350"`
-	ID            string `validate:"nonzero"`
-	Major         string `validate:"nonzero"`
-	Minor         string `validate:"nonzero"`
-	DateOfBirth   string `validate:"nonzero"`
-	WillingToHelp bool   `validate:"nonzero"`
+func CreateNewUser(input model.CreateUser) model.User {
+	blankError := model.Error{
+		Errors:  false,
+		Code:    0,
+		Message: "",
+	}
+	blankToken := model.UserToken{
+		Token:      "",
+		ExpireDate: 0,
+	}
+	blankEmailVerified := model.EmailVerified{
+		Verified:      false,
+		DateValidated: "",
+		Email:         "",
+		Error:         &blankError,
+	}
+	var blankComments []*model.Comment
+	var blankPosts []*model.Post
+	blankUser := model.User{
+		ID:            "",
+		Email:         "",
+		FirstName:     "",
+		LastName:      "",
+		DateOfBirth:   "",
+		Major:         "",
+		Minor:         "",
+		WillingToHelp: false,
+		Posts:         blankPosts,
+		Comments:      blankComments,
+		PostIds:       []string{},
+		CommentIds:    []string{},
+		ClassesTaken:  []string{},
+		EmailVerified: &blankEmailVerified,
+		Token:         &blankToken,
+		Error:         &blankError,
+	}
+	userExists, errors := mongo.UserExists(input.Email)
+	if errors.Errors == true {
+		fmt.Print(errors.Message)
+		blankUser.Error = &errors
+		return blankUser
+	}
+	if userExists {
+		userExistsError := model.Error{
+			Errors:  true,
+			Code:    403,
+			Message: "User already exists!",
+		}
+		blankUser.Error = &userExistsError
+		return blankUser
+	}
+	validatedUser, errors := validator.ValidateInfo(input)
+	if errors.Errors == true {
+		fmt.Print(errors.Message)
+		blankUser.Error = &errors
+		return blankUser
+	}
+	user, errors := mongo.CreateUser(validatedUser)
+	if errors.Errors == true {
+		fmt.Print(errors.Message)
+		blankUser.Error = &errors
+		return blankUser
+	}
+	user.Error = &errors
+	return user
 }
 
-type Errors struct {
-	errors    bool
-	errorList []string
+func FindUser(input model.UserInput) model.User {
+	returnError := model.Error{
+		Errors:  false,
+		Code:    0,
+		Message: "",
+	}
+	blankError := model.Error{
+		Errors:  false,
+		Code:    0,
+		Message: "",
+	}
+	blankToken := model.UserToken{
+		Token:      "",
+		ExpireDate: 0,
+	}
+	blankEmailVerified := model.EmailVerified{
+		Verified:      false,
+		DateValidated: "",
+		Email:         "",
+		Error:         &blankError,
+	}
+	var blankComments []*model.Comment
+	var blankPosts []*model.Post
+	loginReturn := model.User{
+		ID:            "",
+		Email:         "",
+		FirstName:     "",
+		LastName:      "",
+		DateOfBirth:   "",
+		Major:         "",
+		Minor:         "",
+		WillingToHelp: false,
+		Posts:         blankPosts,
+		Comments:      blankComments,
+		PostIds:       []string{},
+		CommentIds:    []string{},
+		ClassesTaken:  []string{},
+		EmailVerified: &blankEmailVerified,
+		Token:         &blankToken,
+		Error:         &blankError,
+	}
+	if token, _ := jwt.Parse(input.Token, nil); token != nil {
+
+		// We can parse and extract claims
+		claims := token.Claims.(jwt.MapClaims)
+		fmt.Println(claims["userID"].(string))
+		userToken, returnedErrorGetUser := mongo.GetUserToken(claims["userID"].(string))
+		if returnedErrorGetUser.Errors {
+			loginReturn.Error = &returnedErrorGetUser
+			return loginReturn
+		}
+		isValid, _ := token2.ValidateToken(input.Token, userToken, claims["email"].(string))
+		fmt.Println(isValid)
+		if isValid {
+			returnUser := mongo.FindOneUser(claims["userID"].(string), true)
+			return returnUser
+		} else {
+			returnError.Errors = true
+			returnError.Code = 401
+			returnError.Message = "User not logged in!"
+			loginReturn.Error = &returnError
+			return loginReturn
+		}
+	} else {
+		returnError.Errors = true
+		returnError.Code = 500
+		returnError.Message = "Token invalid"
+		loginReturn.Error = &returnError
+		return loginReturn
+	}
 }
-
-type ValidUser struct {
-	Email         string
-	Password      string
-	PasswordHash  string
-	DateOfBirth   string
-	Major         string
-	Minor         string
-	WillingToHelp bool
-	ID            string
-	FName         string
-	LName         string
-}
-
-// TODO: Fix errors
-
-func ValidateInfo(apiUser model.CreateUser) (ValidUser, model.Error) {
-	errors := model.Error{}
-	returnUser := ValidUser{}
-	idHash, err := bcrypt.GenerateFromPassword([]byte(apiUser.Email), 10)
-	if err != nil {
-		errors.Errors = true
-		errors.Message = "Failed to encrypt ID"
-		errors.Code = 500
-		return returnUser, errors
-	}
-	validateUser := UserValidator{
-		Email:         apiUser.Email,
-		FName:         apiUser.FirstName,
-		LName:         apiUser.LastName,
-		Password:      apiUser.Password,
-		Major:         apiUser.Major,
-		Minor:         *apiUser.Minor,
-		DateOfBirth:   apiUser.DateOfBirth,
-		WillingToHelp: apiUser.WillingToHelp,
-		ID:            string(idHash),
-	}
-
-	validateUser.ID = string(idHash)
-
-	err = validator.Validate(validateUser)
-	if err != nil {
-		errors.Errors = true
-		errors.Message = "Error in validation of user info. Please follow website guidelines."
-		errors.Code = 400
-		return returnUser, errors
-	}
-	passHash, err := bcrypt.GenerateFromPassword([]byte(apiUser.Password), 12)
-	if err != nil {
-		errors.Errors = true
-		errors.Message = "Error when hashing password."
-		errors.Code = 500
-		return returnUser, errors
-	}
-
-	returnUser = ValidUser{
-		Email:         apiUser.Email,
-		FName:         apiUser.FirstName,
-		LName:         apiUser.LastName,
-		Password:      apiUser.Password,
-		PasswordHash:  string(passHash),
-		Major:         apiUser.Major,
-		Minor:         *apiUser.Minor,
-		DateOfBirth:   apiUser.DateOfBirth,
-		WillingToHelp: apiUser.WillingToHelp,
-		ID:            string(idHash),
-	}
-	errors.Errors = false
-
-	return returnUser, errors
-}
-
-// func NewUser(userInfo ValidatedUser, collection *gocb.Collection) (UserToken, MutationPayload) {
-// 	returnErr := MutationPayload{}
-// 	returnErr.Success = true
-// 	returnToken := userInfo.ValidUser.Token
-// 	if userInfo.UserValid {
-// 		exists, _ := UserExist(userInfo.ValidUser.Email, collection)
-// 		if exists {
-// 			returnErr.Success = false
-// 			returnErr.Errors = append(returnErr.Errors, "Email already in use!")
-// 			returnErr.Token = ""
-// 			returnToken.Token = ""
-// 			returnToken.ExpireDate = 0000
-
-// 		} else {
-// 			_, err := collection.Upsert(userInfo.ValidUser.Email, userInfo.ValidUser, &gocb.UpsertOptions{})
-// 			if err != nil {
-// 				returnErr.Success = false
-// 				returnErr.Errors = append(returnErr.Errors, "Account Creation Error, please try again later. Dev Code: ERRNEWUSRDBUP")
-// 				returnErr.Token = ""
-// 				returnToken.Token = ""
-// 				returnToken.ExpireDate = 0000
-// 			}
-
-// 		}
-
-// 	} else {
-// 		returnErr.Errors = append(returnErr.Errors, userInfo.Errors...)
-// 		returnErr.Success = false
-// 		returnErr.Errors = append(returnErr.Errors, "Account Creation Error, please try again later. Dev Code: ERRNEWUSRNVU")
-// 		returnErr.Token = ""
-// 		returnToken.Token = ""
-// 		returnToken.ExpireDate = 0000
-// 		return returnToken, returnErr
-// 	}
-
-// 	return returnToken, returnErr
-// }
-
-// func UpdateUser(modifyDetails ModifyUser, collection *gocb.Collection) bool {
-// 	//TODO: Implement
-// 	return false
-// }
-
-// func RemoveUser(userInfo User) bool {
-// 	//TODO: Implement
-// 	return false
-// }
-
-// func UserExist(email string, collection *gocb.Collection) (bool, APIError) {
-// 	apiErr := APIError{}
-// 	checkUser, _ := collection.Get(email, nil)
-// 	//TODO: Swap to check exist function couchbase
-// 	// if err != nil {
-// 	// 	if err.error_name == "KEY_ENOENT" {
-// 	// 		return false, apiErr
-// 	// 	}
-// 	// 	apiErr.Error = true
-// 	// 	apiErr.Message = "Account Validation Error, please try again later."
-// 	// 	panic(err)
-// 	// 	return false, apiErr
-// 	// }
-// 	if checkUser != nil {
-// 		return true, apiErr
-// 	}
-// 	return false, apiErr
-
-// }
