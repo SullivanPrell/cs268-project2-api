@@ -8,9 +8,12 @@ require (
 	github.com/creack/pty v1.1.11 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fatih/color v1.10.0 // indirect
+	github.com/go-chi/chi v3.3.2+incompatible
+	github.com/gorilla/websocket v1.4.2
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/joho/godotenv v1.3.0
 	github.com/pelletier/go-toml v1.8.1 // indirect
+	github.com/rs/cors v1.6.0
 	github.com/vektah/gqlparser/v2 v2.1.0
 	go.mongodb.org/mongo-driver v1.4.3
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550

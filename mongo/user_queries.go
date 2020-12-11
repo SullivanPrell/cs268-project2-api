@@ -416,6 +416,7 @@ func UpdateUserToken(id string, token model.UserToken) model.Error {
 	// 8) Find one result and update it
 	result := collection.FindOneAndUpdate(ctx, filter, update, &opt)
 	if result.Err() != nil {
+		fmt.Println(result.Err())
 		errors.Errors = true
 		errors.Message = "Token update failed"
 		errors.Code = 500
