@@ -25,8 +25,6 @@ func CreateNewUser(input model.CreateUser) model.User {
 		Email:         "",
 		Error:         &blankError,
 	}
-	var blankComments []*model.Comment
-	var blankPosts []*model.Post
 	blankUser := model.User{
 		ID:            "",
 		Email:         "",
@@ -36,8 +34,6 @@ func CreateNewUser(input model.CreateUser) model.User {
 		Major:         "",
 		Minor:         "",
 		WillingToHelp: false,
-		Posts:         blankPosts,
-		Comments:      blankComments,
 		PostIds:       []string{},
 		CommentIds:    []string{},
 		ClassesTaken:  []string{},
@@ -97,8 +93,6 @@ func FindUser(input model.UserInput) model.User {
 		Email:         "",
 		Error:         &blankError,
 	}
-	var blankComments []*model.Comment
-	var blankPosts []*model.Post
 	loginReturn := model.User{
 		ID:            "",
 		Email:         "",
@@ -108,8 +102,6 @@ func FindUser(input model.UserInput) model.User {
 		Major:         "",
 		Minor:         "",
 		WillingToHelp: false,
-		Posts:         blankPosts,
-		Comments:      blankComments,
 		PostIds:       []string{},
 		CommentIds:    []string{},
 		ClassesTaken:  []string{},

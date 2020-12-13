@@ -8,7 +8,7 @@ import (
 
 	"github.com/joho/godotenv"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
 )
 
 type Claims struct {

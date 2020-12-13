@@ -3,7 +3,21 @@
 package model
 
 type Comment struct {
-	ID       string `json:"id"`
+	ID       string `json:"id" bson:"_id"`
+	UserID   string `json:"userId"`
+	PostID   string `json:"postId"`
+	ThreadID string `json:"threadId"`
+	Content  string `json:"content"`
+}
+
+type CommentInput struct {
+	Email     string `json:"email"`
+	Token     string `json:"token"`
+	CommentID string `json:"commentId"`
+}
+
+type CommentSingle struct {
+	ID       string `json:"id" bson:"_id"`
 	UserID   string `json:"userId"`
 	PostID   string `json:"postId"`
 	ThreadID string `json:"threadId"`
@@ -11,10 +25,15 @@ type Comment struct {
 	Error    *Error `json:"error"`
 }
 
-type CommentInput struct {
-	Email     string `json:"email"`
-	Token     string `json:"token"`
-	CommentID string `json:"commentId"`
+type Comments struct {
+	Comments []*Comment `json:"comments"`
+	Error    *Error     `json:"error"`
+}
+
+type CommentsByPostIDInput struct {
+	PostID string `json:"postID"`
+	Token  string `json:"token"`
+	Email  string `json:"email"`
 }
 
 type CommentsInput struct {
@@ -24,22 +43,19 @@ type CommentsInput struct {
 }
 
 type CreateComment struct {
-	Tags     []*string `json:"tags"`
-	Content  string    `json:"content"`
-	Files    []*string `json:"files"`
-	ThreadID string    `json:"threadId"`
-	PostID   string    `json:"postId"`
-	Token    string    `json:"token"`
+	Content  string `json:"content"`
+	ThreadID string `json:"threadId"`
+	PostID   string `json:"postId"`
+	Token    string `json:"token"`
 }
 
 type CreatePost struct {
-	Tags      []*string `json:"tags"`
-	Content   string    `json:"content"`
-	Title     string    `json:"title"`
-	SubHeader string    `json:"subHeader"`
-	Class     string    `json:"class"`
-	ThreadID  string    `json:"threadId"`
-	Token     string    `json:"token"`
+	Content   string `json:"content"`
+	Title     string `json:"title"`
+	SubHeader string `json:"subHeader"`
+	Class     string `json:"class"`
+	ThreadID  string `json:"threadId"`
+	Token     string `json:"token"`
 }
 
 type CreateUser struct {
@@ -80,16 +96,14 @@ type LoginInput struct {
 }
 
 type Post struct {
-	ID        string     `json:"id"`
-	UserID    string     `json:"userId"`
-	Tags      []string   `json:"tags"`
-	Content   string     `json:"content"`
-	Comments  []*Comment `json:"comments"`
-	ThreadID  string     `json:"threadId"`
-	SubHeader string     `json:"subHeader"`
-	Title     string     `json:"title"`
-	Class     string     `json:"class"`
-	Error     *Error     `json:"error"`
+	ID         string   `json:"id" bson:"_id"`
+	UserID     string   `json:"userId"`
+	Content    string   `json:"content"`
+	CommentIDs []string `json:"commentIDs"`
+	ThreadID   string   `json:"threadId"`
+	SubHeader  string   `json:"subHeader"`
+	Title      string   `json:"title"`
+	Class      string   `json:"class"`
 }
 
 type PostInput struct {
@@ -98,9 +112,33 @@ type PostInput struct {
 	PostID string `json:"postId"`
 }
 
+type PostSingle struct {
+	ID         string   `json:"id" bson:"_id"`
+	UserID     string   `json:"userId"`
+	Content    string   `json:"content"`
+	CommentIDs []string `json:"commentIDs"`
+	ThreadID   string   `json:"threadId"`
+	SubHeader  string   `json:"subHeader"`
+	Title      string   `json:"title"`
+	Class      string   `json:"class"`
+	Error      *Error   `json:"error"`
+}
+
 type Posts struct {
 	Posts []*Post `json:"posts"`
 	Error *Error  `json:"error"`
+}
+
+type PostsByThreadInput struct {
+	Email    string `json:"email"`
+	Token    string `json:"token"`
+	ThreadID string `json:"threadID"`
+}
+
+type PostsByUserIDInput struct {
+	Email  string `json:"email"`
+	Token  string `json:"token"`
+	UserID string `json:"userID"`
 }
 
 type PostsInput struct {
@@ -109,8 +147,39 @@ type PostsInput struct {
 	PostIds []string `json:"postIds"`
 }
 
+type Thread struct {
+	ID          string `json:"id" bson:"_id"`
+	Name        string `json:"name"`
+	TagLine     string `json:"tagLine"`
+	ClassPrefix string `json:"classPrefix"`
+}
+
+type ThreadInput struct {
+	ID    string `json:"id" bson:"_id"`
+	Email string `json:"email"`
+	Token string `json:"token"`
+}
+
+type ThreadSingle struct {
+	ID          string `json:"id" bson:"_id"`
+	Name        string `json:"name"`
+	TagLine     string `json:"tagLine"`
+	ClassPrefix string `json:"classPrefix"`
+	Errors      *Error `json:"errors"`
+}
+
+type Threads struct {
+	Threads []*Thread `json:"threads"`
+	Errors  *Error    `json:"errors"`
+}
+
+type ThreadsInput struct {
+	Email string `json:"email"`
+	Token string `json:"token"`
+}
+
 type User struct {
-	ID            string         `json:"_id"`
+	ID            string         `json:"_id" bson:"_id"`
 	Email         string         `json:"email"`
 	FirstName     string         `json:"firstName"`
 	LastName      string         `json:"lastName"`
@@ -118,8 +187,6 @@ type User struct {
 	Major         string         `json:"major"`
 	Minor         string         `json:"minor"`
 	WillingToHelp bool           `json:"willingToHelp"`
-	Posts         []*Post        `json:"posts"`
-	Comments      []*Comment     `json:"comments"`
 	PostIds       []string       `json:"postIds"`
 	CommentIds    []string       `json:"commentIds"`
 	ClassesTaken  []string       `json:"classesTaken"`

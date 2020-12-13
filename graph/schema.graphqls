@@ -17,8 +17,6 @@ type User {
   major: String!
   minor: String!
   willingToHelp: Boolean!
-  posts: [Post!]!
-  comments: [Comment!]!
   postIds: [String!]!
   commentIds: [String!]!
   classesTaken: [String!]!
@@ -32,16 +30,35 @@ type UserToken {
   expireDate: Int!
 }
 
-type Post {
+type PostSingle {
   id: String!
   userId: String!
-  tags: [String!]!
   content: String!
-  comments: [Comment!]!
+  commentIDs: [String!]!
   threadId: String!
   subHeader: String!
   title: String!
   class: String!
+  error: Error!
+}
+
+type Post {
+  id: String!
+  userId: String!
+  content: String!
+  commentIDs: [String!]!
+  threadId: String!
+  subHeader: String!
+  title: String!
+  class: String!
+}
+
+type CommentSingle {
+  id: String!
+  userId: String!
+  postId: String!
+  threadId: String!
+  content: String!
   error: Error!
 }
 
@@ -51,8 +68,7 @@ type Comment {
   postId: String!
   threadId: String!
   content: String!
-  error: Error!
-}
+ }
 
 type EmailVerified {
   verified: Boolean!
@@ -77,6 +93,42 @@ type VerifyEmail {
 type Posts {
   posts: [Post!]!
   error: Error!
+}
+
+type Comments {
+  comments: [Comment!]!
+  error: Error!
+}
+
+type Thread {
+  id: String!
+  name: String!
+  tagLine: String!
+  classPrefix: String!
+}
+
+type ThreadSingle {
+  id: String!
+  name: String!
+  tagLine: String!
+  classPrefix: String!
+  errors: Error!
+}
+
+type Threads {
+  threads: [Thread!]!
+  errors: Error!
+}
+
+input ThreadInput {
+  id: String!
+  email: String!
+  token: String!
+}
+
+input ThreadsInput {
+  email: String!
+  token: String!
 }
 
 input CreateUser {
@@ -113,6 +165,24 @@ input PostsInput {
   postIds: [String!]!
 }
 
+input PostsByThreadInput {
+  email: String!
+  token: String!
+  threadID: String!
+}
+
+input PostsByUserIDInput {
+  email: String!
+  token: String!
+  userID: String!
+}
+
+input CommentsByPostIDInput {
+  postID: String!
+  token: String!
+  email: String!
+}
+
 input CommentInput {
   email: String!
   token: String!
@@ -126,7 +196,6 @@ input CommentsInput {
 }
 
 input CreatePost {
-  tags: [String]
   content: String!
   title: String!
   subHeader: String!
@@ -136,9 +205,7 @@ input CreatePost {
 }
 
 input CreateComment {
-  tags: [String]
   content: String!
-  files: [String]
   threadId: String!
   postId: String!
   token: String!
@@ -153,14 +220,18 @@ input VerifyEmailInput {
 type Mutation {
   Login(input: LoginInput!): Login!
   CreateUser(input: CreateUser!): User!
-  CreatePost(input: CreatePost!): Post!
-  CreateComment(input: CreateComment!): Comment!
+  CreatePost(input: CreatePost!): PostSingle!
+  CreateComment(input: CreateComment!): PostSingle!
 }
 
 type Query {
   User(input: UserInput!): User!
-  Posts(input: PostsInput!): [Post!]!
-  Post(input: PostInput!): Post!
-  Comments(input: CommentsInput!): [Comment!]!
-  Comment(input: CommentInput!): Comment!
+  Posts(input: PostsInput!): Posts!
+  Post(input: PostInput!): PostSingle!
+  PostsByUser(input: PostsByUserIDInput!): Posts!
+  PostByThread(input: PostsByThreadInput!): Posts!
+  Comments(input: CommentsInput!): Comments!
+  CommentsByPostID(input: CommentsByPostIDInput!): Comments!
+  Thread(input: ThreadInput!): ThreadSingle!
+  Threads(input: ThreadsInput!): Threads!
 }

@@ -5,12 +5,13 @@ package graph
 
 import (
 	"context"
+	"cs268-project2-api/comment"
 	"cs268-project2-api/graph/generated"
 	"cs268-project2-api/graph/model"
 	"cs268-project2-api/post"
+	thread2 "cs268-project2-api/thread"
 	"cs268-project2-api/user"
 	"cs268-project2-api/userAuth"
-	"fmt"
 )
 
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.Login, error) {
@@ -23,13 +24,16 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUse
 	return &returnUser, nil
 }
 
-func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePost) (*model.Post, error) {
-	returnPost := post.CreateNewPost(input)
+func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePost) (*model.PostSingle, error) {
+	returnPost, errors := post.CreateNewPost(input)
+	returnPost.Error = &errors
 	return &returnPost, nil
 }
 
-func (r *mutationResolver) CreateComment(ctx context.Context, input model.CreateComment) (*model.Comment, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) CreateComment(ctx context.Context, input model.CreateComment) (*model.PostSingle, error) {
+	returnPost, errors := comment.CreateNewComment(input)
+	returnPost.Error = &errors
+	return &returnPost, nil
 }
 
 func (r *queryResolver) User(ctx context.Context, input model.UserInput) (*model.User, error) {
@@ -37,20 +41,70 @@ func (r *queryResolver) User(ctx context.Context, input model.UserInput) (*model
 	return &returnUser, nil
 }
 
-func (r *queryResolver) Posts(ctx context.Context, input model.PostsInput) ([]*model.Post, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) Posts(ctx context.Context, input model.PostsInput) (*model.Posts, error) {
+	posts, errors := post.GetPosts(input)
+	returnVal := model.Posts{
+		Posts: posts,
+		Error: &errors,
+	}
+	return &returnVal, nil
 }
 
-func (r *queryResolver) Post(ctx context.Context, input model.PostInput) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) Post(ctx context.Context, input model.PostInput) (*model.PostSingle, error) {
+	returnPost, errors := post.GetPost(input)
+	returnPost.Error = &errors
+	return &returnPost, nil
 }
 
-func (r *queryResolver) Comments(ctx context.Context, input model.CommentsInput) ([]*model.Comment, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) PostsByUser(ctx context.Context, input model.PostsByUserIDInput) (*model.Posts, error) {
+	posts, errors := post.GetPostsByUserID(input)
+	returnVal := model.Posts{
+		Posts: posts,
+		Error: &errors,
+	}
+	return &returnVal, nil
 }
 
-func (r *queryResolver) Comment(ctx context.Context, input model.CommentInput) (*model.Comment, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) PostByThread(ctx context.Context, input model.PostsByThreadInput) (*model.Posts, error) {
+	posts, errors := post.GetPostsByThread(input)
+	returnVal := model.Posts{
+		Posts: posts,
+		Error: &errors,
+	}
+	return &returnVal, nil
+}
+
+func (r *queryResolver) Comments(ctx context.Context, input model.CommentsInput) (*model.Comments, error) {
+	comments, errors := comment.GetComments(input)
+	returnVal := model.Comments{
+		Comments: comments,
+		Error:    &errors,
+	}
+	return &returnVal, nil
+}
+
+func (r *queryResolver) CommentsByPostID(ctx context.Context, input model.CommentsByPostIDInput) (*model.Comments, error) {
+	comments, errors := comment.GetCommentsByPostID(input)
+	returnVal := model.Comments{
+		Comments: comments,
+		Error:    &errors,
+	}
+	return &returnVal, nil
+}
+
+func (r *queryResolver) Thread(ctx context.Context, input model.ThreadInput) (*model.ThreadSingle, error) {
+	thread, errors := thread2.GetThread(input)
+	thread.Errors = &errors
+	return &thread, nil
+}
+
+func (r *queryResolver) Threads(ctx context.Context, input model.ThreadsInput) (*model.Threads, error) {
+	threads, errors := thread2.GetThreads(input)
+	returnVal := model.Threads{
+		Threads: threads,
+		Errors:  &errors,
+	}
+	return &returnVal, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

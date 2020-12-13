@@ -608,7 +608,7 @@ func UpdateUserComments(userID string, commentID string) (bool, model.Error) {
 			bson.M{"_id": userID}}}
 
 	update := bson.M{
-		"push": bson.M{"commentids": commentID},
+		"$push": bson.M{"commentids": commentID},
 	}
 
 	// 7) Create an instance of an options and set the desired options
