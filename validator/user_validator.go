@@ -2,6 +2,7 @@ package validator
 
 import (
 	"cs268-project2-api/graph/model"
+	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/validator.v2"
 )
@@ -36,8 +37,6 @@ type ValidUser struct {
 	LName         string
 }
 
-// TODO: Fix errors
-
 func ValidateInfo(apiUser model.CreateUser) (ValidUser, model.Error) {
 	errors := model.Error{}
 	returnUser := ValidUser{}
@@ -64,6 +63,7 @@ func ValidateInfo(apiUser model.CreateUser) (ValidUser, model.Error) {
 
 	err = validator.Validate(validateUser)
 	if err != nil {
+		fmt.Print(err)
 		errors.Errors = true
 		errors.Message = "Error in validation of user info. Please follow website guidelines."
 		errors.Code = 400

@@ -64,7 +64,7 @@ func Login(userInput model.LoginInput) model.Login {
 		loginReturn.Error = &returnError
 		return loginReturn
 
-	} else if userInput.Token != "" {
+	} else if userInput.Token != "" && userInput.Token != "undefined" {
 		fmt.Println("Token Login")
 		// Token Login
 		if token, _ := jwt.Parse(userInput.Token, nil); token != nil {
@@ -78,7 +78,7 @@ func Login(userInput model.LoginInput) model.Login {
 				return loginReturn
 			}
 			isValid, _ := token2.ValidateToken(userInput.Token, userToken, claims["email"].(string))
-			fmt.Println(isValid)
+			fmt.Printf("Is valid: %t", isValid)
 			if isValid {
 				// Token is valid - login successful
 				renewed, newToken, returnedErrorRenew := token2.RenewToken(claims["userID"].(string), claims["email"].(string), userToken)
@@ -107,6 +107,14 @@ func Login(userInput model.LoginInput) model.Login {
 				loginReturn.Error = &returnError
 				return loginReturn
 
+			} else {
+				fmt.Println("Error Login")
+				// Error - input is invalid
+				returnError.Errors = true
+				returnError.Message = "Token invalid"
+				returnError.Code = 403
+				loginReturn.Error = &returnError
+				return loginReturn
 			}
 		}
 

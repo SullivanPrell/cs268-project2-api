@@ -33,6 +33,7 @@ func CreateComment(input model.CreateComment, userID string) (string, model.Erro
 		UserID:  userID,
 		Content: input.Content,
 		ID:      string(idHash),
+		PostID: input.PostID,
 	}
 	err = godotenv.Load(".env")
 	if err != nil {
