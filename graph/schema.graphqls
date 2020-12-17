@@ -3,62 +3,84 @@
 # https://gqlgen.com/getting-started/
 
 type Error {
-  error: Boolean!
-  code: Int
-  Message: String!
+  errors: Boolean!
+  code: Int!
+  message: String!
 }
 
 type User {
-  id: String
-  email: String
-  firstName: String
-  lastName: String
-  dateOfBirth: String
-  major: String
-  minor: String
-  willingToHelp: Boolean
-  posts: [Post]
-  comments: [Comment]
-  postIds: [String]
-  commentIds: [String]
-  classesTaken: [String]
-  passwordHash: String
-  emailVerified: EmailVerified
+  _id: String!
+  email: String!
+  firstName: String!
+  lastName: String!
+  dateOfBirth: String!
+  major: String!
+  minor: String!
+  willingToHelp: Boolean!
+  postIds: [String!]!
+  commentIds: [String!]!
+  classesTaken: [String!]!
+  emailVerified: EmailVerified!
+  token: UserToken!
+  error: Error!
+}
+
+type UserToken {
+  token: String!
+  expireDate: Int!
+}
+
+type PostSingle {
+  id: String!
+  userId: String!
+  content: String!
+  commentIDs: [String!]!
+  threadId: String!
+  subHeader: String!
+  title: String!
+  class: String!
   error: Error!
 }
 
 type Post {
-  id: String
-  userId: String
-  tags: [String]
-  content: String
-  files: [String]
-  comments: [Comment]
-  threadId: String
+  id: String!
+  userId: String!
+  content: String!
+  commentIDs: [String!]!
+  threadId: String!
+  subHeader: String!
+  title: String!
+  class: String!
+}
+
+type CommentSingle {
+  id: String!
+  userId: String!
+  postId: String!
+  threadId: String!
+  content: String!
   error: Error!
 }
 
 type Comment {
-  id: String
-  userId: String
-  postId: String
-  threadId: String
-  files: [String]
-  content: String
-  error: Error!
-}
+  id: String!
+  userId: String!
+  postId: String!
+  threadId: String!
+  content: String!
+ }
 
 type EmailVerified {
-  verified: Boolean
-  dateValidated: String
-  email: String
+  verified: Boolean!
+  dateValidated: String!
+  email: String!
   error: Error!
 }
 
 type Login {
   userId: String!
   email: String!
-  token: String!
+  token: UserToken!
   error: Error!
 }
 
@@ -68,6 +90,47 @@ type VerifyEmail {
   error: Error!
 }
 
+type Posts {
+  posts: [Post!]!
+  error: Error!
+}
+
+type Comments {
+  comments: [Comment!]!
+  error: Error!
+}
+
+type Thread {
+  id: String!
+  name: String!
+  tagLine: String!
+  classPrefix: String!
+}
+
+type ThreadSingle {
+  id: String!
+  name: String!
+  tagLine: String!
+  classPrefix: String!
+  errors: Error!
+}
+
+type Threads {
+  threads: [Thread!]!
+  errors: Error!
+}
+
+input ThreadInput {
+  id: String!
+  email: String!
+  token: String!
+}
+
+input ThreadsInput {
+  email: String!
+  token: String!
+}
+
 input CreateUser {
   email: String!
   password: String!
@@ -75,11 +138,14 @@ input CreateUser {
   major: String!
   minor: String
   willingToHelp: Boolean!
+  firstName: String!
+  lastName: String!
 }
 
 input LoginInput {
   email: String!
   password: String!
+  token: String!
 }
 
 input UserInput {
@@ -99,6 +165,24 @@ input PostsInput {
   postIds: [String!]!
 }
 
+input PostsByThreadInput {
+  email: String!
+  token: String!
+  threadID: String!
+}
+
+input PostsByUserIDInput {
+  email: String!
+  token: String!
+  userID: String!
+}
+
+input CommentsByPostIDInput {
+  postID: String!
+  token: String!
+  email: String!
+}
+
 input CommentInput {
   email: String!
   token: String!
@@ -112,18 +196,19 @@ input CommentsInput {
 }
 
 input CreatePost {
-  tags: [String]
   content: String!
-  files: [String]
+  title: String!
+  subHeader: String!
+  class: String!
   threadId: String!
+  token: String!
 }
 
 input CreateComment {
-  tags: [String]
   content: String!
-  files: [String]
   threadId: String!
   postId: String!
+  token: String!
 }
 
 input VerifyEmailInput {
@@ -135,15 +220,18 @@ input VerifyEmailInput {
 type Mutation {
   Login(input: LoginInput!): Login!
   CreateUser(input: CreateUser!): User!
-  CreatePost(input: CreatePost!): Post!
-  CreateComment(input: CreateComment!): Comment!
-  VerifyEmail(input: VerifyEmailInput!): VerifyEmail!
+  CreatePost(input: CreatePost!): PostSingle!
+  CreateComment(input: CreateComment!): PostSingle!
 }
 
 type Query {
   User(input: UserInput!): User!
-  Posts(input: PostsInput!): [Post!]!
-  Post(input: PostInput!): Post!
-  Comments(input: CommentsInput!): [Comment!]!
-  Comment(input: CommentInput!): Comment!
+  Posts(input: PostsInput!): Posts!
+  Post(input: PostInput!): PostSingle!
+  PostsByUser(input: PostsByUserIDInput!): Posts!
+  PostByThread(input: PostsByThreadInput!): Posts!
+  Comments(input: CommentsInput!): Comments!
+  CommentsByPostID(input: CommentsByPostIDInput!): Comments!
+  Thread(input: ThreadInput!): ThreadSingle!
+  Threads(input: ThreadsInput!): Threads!
 }

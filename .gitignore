@@ -16,3 +16,6 @@
 
 #Environment Variables
 .env
+
+.idea
+.air.toml
