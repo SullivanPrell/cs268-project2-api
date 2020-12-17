@@ -62,7 +62,10 @@ func ValidateToken(tokenString string, userTokenInfo model.UserToken, email stri
 			return false, jwt.MapClaims{}
 		} else {
 			claims := &Claims{}
-			//getEnv()
+			err := godotenv.Load(".env")
+			if err != nil {
+				return false, jwt.MapClaims{}
+			}
 			jwtSecret := fmt.Sprintf("%s%s", os.Getenv("JWT_SECRET"), email)
 			// Parse the JWT string and store the result in `claims`.
 			// Note that we are passing the key in this method as well. This method will return an error
